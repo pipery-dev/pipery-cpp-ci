@@ -192,5 +192,5 @@ runs:
         INPUT_LOG_FILE: ${{ inputs.log_file }}
 
 branding:
-  icon: package
-  color: blue
+  icon: cpu
+  color: purple
