@@ -1,8 +1,8 @@
-# <img src="https://raw.githubusercontent.com/feathericons/feather/master/icons/cpu.svg" width="28" align="center" /> Pipery C/C++ CI
+# <img src="https://raw.githubusercontent.com/pipery-dev/pipery-cpp-ci/main/assets/icon.png" width="28" align="center" /> Pipery C/C++ CI
 
 Reusable GitHub Action for a complete C/C++ CI pipeline with structured logging via [Pipery](https://pipery.dev). Auto-detects CMake, Make, and Meson build systems.
 
-[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Pipery%20C%2FC%2B%2B%20CI-blue?logo=github)](https://github.com/marketplace/actions/pipery-c-c-ci)
+[![GitHub Marketplace](https://img.shields.io/badge/Marketplace-Pipery%20C/C++%20CI-blue?logo=github)](https://github.com/marketplace/actions/pipery-c-c-ci)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue)](CHANGELOG.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -63,7 +63,7 @@ jobs:
 
 ## About Pipery
 
-<img src="https://raw.githubusercontent.com/feathericons/feather/master/icons/zap.svg" width="18" align="center" /> [**Pipery**](https://pipery.dev) is an open-source CI/CD observability platform. Every step script runs under **psh** (Pipery Shell), which intercepts all commands and emits structured JSONL events — giving you full visibility into your pipeline without any manual instrumentation.
+<img src="https://avatars.githubusercontent.com/u/270923927?s=32" width="22" align="center" /> [**Pipery**](https://pipery.dev) is an open-source CI/CD observability platform. Every step script runs under **psh** (Pipery Shell), which intercepts all commands and emits structured JSONL events — giving you full visibility into your pipeline without any manual instrumentation.
 
 - Browse logs in the [Pipery Dashboard](https://github.com/pipery-dev/pipery-dashboard)
 - Find all Pipery actions on [GitHub Marketplace](https://github.com/marketplace?q=pipery&type=actions)
