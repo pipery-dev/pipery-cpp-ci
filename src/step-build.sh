@@ -27,7 +27,8 @@ echo "Building with: $BUILD_SYSTEM"
 
 case "$BUILD_SYSTEM" in
   cmake)
-    cmake -B build ${CMAKE_FLAGS:-} .
+    # shellcheck disable=SC2086
+cmake -B build ${CMAKE_FLAGS:-} .
     cmake --build build
     ;;
   make)
