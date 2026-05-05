@@ -8,7 +8,7 @@ inputs:
   config_file:
     description: 'Path to Pipery config file.'
     required: false
-    default: '.github/pipery/config.yaml'
+    default: '.pipery/config.yaml'
   build_system:
     description: 'Build system to use: auto, cmake, make, or meson.'
     required: false
