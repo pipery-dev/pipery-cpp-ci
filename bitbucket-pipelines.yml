@@ -61,32 +61,19 @@ definitions:
         name: Code Quality Linting
         image: gcc:latest
         script:
-          - echo "Installing cppcheck..."
-          - apt-get update && apt-get install -y cppcheck
-          - cd ${PROJECT_PATH:-.}
-          - echo "Running cppcheck..."
-          - cppcheck . --enable=all || true
-          - echo "Lint stage complete"
+          - bash ./src/step-lint.sh
+        env:
+          INPUT_PROJECT_PATH: ${PROJECT_PATH:-.}
+          INPUT_LOG_FILE: ${LOG_FILE:-pipery.jsonl}
 
     - step: &build-step
         name: Build C/C++ Project
         image: gcc:latest
         script:
-          - echo "Installing build dependencies..."
-          - apt-get update && apt-get install -y cmake make
-          - cd ${PROJECT_PATH:-.}
-          - mkdir -p build && cd build
-          - |
-            if [ "$BUILD_SYSTEM" = "cmake" ] || [ "$BUILD_SYSTEM" = "auto" ]; then
-              cmake $CMAKE_FLAGS ..
-              make
-            elif [ "$BUILD_SYSTEM" = "make" ]; then
-              make
-            elif [ "$BUILD_SYSTEM" = "meson" ]; then
-              meson setup builddir
-              meson compile -C builddir
-            fi
-          - echo "Build complete"
+          - bash ./src/step-build.sh
+        env:
+          INPUT_PROJECT_PATH: ${PROJECT_PATH:-.}
+          INPUT_LOG_FILE: ${LOG_FILE:-pipery.jsonl}
         artifacts:
           - build/**
 
@@ -94,15 +81,10 @@ definitions:
         name: Execute Unit Tests
         image: gcc:latest
         script:
-          - echo "Running C/C++ tests..."
-          - cd ${PROJECT_PATH:-.}/build
-          - |
-            if [ -f "CTestConfig.cmake" ] || [ -d "CMakeFiles" ]; then
-              ctest --verbose
-            else
-              echo "No test framework detected"
-            fi
-          - echo "Tests complete"
+          - bash ./src/step-test.sh
+        env:
+          INPUT_PROJECT_PATH: ${PROJECT_PATH:-.}
+          INPUT_LOG_FILE: ${LOG_FILE:-pipery.jsonl}
         artifacts:
           - build/Testing/**
 
@@ -110,21 +92,11 @@ definitions:
         name: Version Bump & Tag
         image: gcc:latest
         script:
-          - echo "Running versioning step..."
-          - apt-get update && apt-get install -y python3 python3-pip
-          - pip install --quiet pipery-tooling
-          - |
-            pipery-tooling version \
-              --project-path ${PROJECT_PATH:-.} \
-              --version-bump ${VERSION_BUMP:-patch} \
-              --log-file ${LOG_FILE:-pipery.jsonl}
-          - |
-            if [ -f "${PROJECT_PATH:-.}/version.txt" ]; then
-              cat ${PROJECT_PATH:-.}/version.txt > version_info.txt
-            else
-              echo "v1.0.0" > version_info.txt
-            fi
-          - cat version_info.txt
+          - bash ./src/step-version.sh
+        env:
+          INPUT_PROJECT_PATH: ${PROJECT_PATH:-.}
+          INPUT_VERSION_BUMP: ${VERSION_BUMP:-patch}
+          INPUT_LOG_FILE: ${LOG_FILE:-pipery.jsonl}
         artifacts:
           - version_info.txt
           - ${LOG_FILE:-pipery.jsonl}
@@ -133,11 +105,10 @@ definitions:
         name: Package Artifacts
         image: gcc:latest
         script:
-          - echo "Packaging C/C++ artifacts..."
-          - cd ${PROJECT_PATH:-.}/build
-          - tar -czf artifacts.tar.gz .
-          - ls -la artifacts.tar.gz
-          - echo "Package complete"
+          - bash ./src/step-package.sh
+        env:
+          INPUT_PROJECT_PATH: ${PROJECT_PATH:-.}
+          INPUT_LOG_FILE: ${LOG_FILE:-pipery.jsonl}
         artifacts:
           - build/artifacts.tar.gz
 
@@ -146,22 +117,22 @@ definitions:
         image: alpine:latest
         trigger: manual
         script:
-          - echo "Release artifacts available as build artifacts"
-          - echo "Artifacts can be manually deployed or integrated with CD pipeline"
-          - echo "Release complete"
+          - bash ./src/step-release.sh
+        env:
+          INPUT_PROJECT_PATH: ${PROJECT_PATH:-.}
+          INPUT_LOG_FILE: ${LOG_FILE:-pipery.jsonl}
 
     - step: &reintegration-step
         name: Reintegration to Target Branch
         image: alpine:latest
         trigger: manual
         script:
-          - echo "Reintegration step would update target branch..."
-          - |
-            if [ -z "$GITHUB_TOKEN" ]; then
-              echo "Skipping reintegration: GITHUB_TOKEN not set"
-              exit 0
-            fi
-          - echo "Reintegration complete"
+          - bash ./src/step-reintegrate.sh
+        env:
+          INPUT_PROJECT_PATH: ${PROJECT_PATH:-.}
+          INPUT_LOG_FILE: ${LOG_FILE:-pipery.jsonl}
+          INPUT_TARGET_BRANCH: ${TARGET_BRANCH:-main}
+          GITHUB_TOKEN: ${GITHUB_TOKEN:-}
 
     - step: &logs-step
         name: Collect & Archive Logs
