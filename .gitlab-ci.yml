@@ -56,12 +56,13 @@ setup:
 sast_scan:
   stage: sast
   image: gcc:latest
-  before_script:
-    - apt-get update && apt-get install -y python3 python3-pip
-    - pip install pipery-tooling
   script:
-    - echo "Running C/C++ SAST scan..."
-    - pipery-tooling sast --project-path $PROJECT_PATH --config $CONFIG_FILE --log-file $LOG_FILE
+    # Refactored: Call shared script instead of inline logic
+    - bash ./src/step-sast.sh
+  env:
+    INPUT_PROJECT_PATH: $PROJECT_PATH
+    INPUT_CONFIG_FILE: $CONFIG_FILE
+    INPUT_LOG_FILE: $LOG_FILE
   allow_failure: true
   rules:
     - if: '$SKIP_SAST == "true"'
@@ -75,12 +76,13 @@ sast_scan:
 sca_scan:
   stage: sca
   image: gcc:latest
-  before_script:
-    - apt-get update && apt-get install -y python3 python3-pip
-    - pip install pipery-tooling
   script:
-    - echo "Running C/C++ SCA scan..."
-    - pipery-tooling sca --project-path $PROJECT_PATH --config $CONFIG_FILE --log-file $LOG_FILE
+    # Refactored: Call shared script instead of inline logic
+    - bash ./src/step-sca.sh
+  env:
+    INPUT_PROJECT_PATH: $PROJECT_PATH
+    INPUT_CONFIG_FILE: $CONFIG_FILE
+    INPUT_LOG_FILE: $LOG_FILE
   allow_failure: true
   rules:
     - if: '$SKIP_SCA == "true"'
@@ -94,11 +96,12 @@ sca_scan:
 lint:
   stage: lint
   image: gcc:latest
-  before_script:
-    - apt-get update && apt-get install -y cppcheck
   script:
-    - cd $PROJECT_PATH
-    - cppcheck . --enable=all || true
+    # Refactored: Call shared script instead of inline logic
+    - bash ./src/step-lint.sh
+  env:
+    INPUT_PROJECT_PATH: $PROJECT_PATH
+    INPUT_LOG_FILE: $LOG_FILE
   allow_failure: true
   rules:
     - if: '$SKIP_LINT == "true"'
@@ -110,22 +113,12 @@ build:
   image: gcc:latest
   dependencies:
     - setup
-  before_script:
-    - apt-get update && apt-get install -y cmake make
   script:
-    - cd $PROJECT_PATH
-    - mkdir -p build && cd build
-    - |
-      if [ "$BUILD_SYSTEM" = "cmake" ] || [ "$BUILD_SYSTEM" = "auto" ]; then
-        cmake $CMAKE_FLAGS ..
-        make
-      elif [ "$BUILD_SYSTEM" = "make" ]; then
-        make
-      elif [ "$BUILD_SYSTEM" = "meson" ]; then
-        meson setup builddir
-        meson compile -C builddir
-      fi
-    - echo "Build complete"
+    # Refactored: Call shared script instead of inline logic
+    - bash ./src/step-build.sh
+  env:
+    INPUT_PROJECT_PATH: $PROJECT_PATH
+    INPUT_LOG_FILE: $LOG_FILE
   rules:
     - if: '$SKIP_BUILD == "true"'
       when: never
@@ -141,13 +134,12 @@ test:
   dependencies:
     - build
   script:
-    - cd $PROJECT_PATH/build
-    - |
-      if [ -f "CTestConfig.cmake" ] || [ -d "CMakeFiles" ]; then
-        ctest --verbose
-      else
-        echo "No test framework detected"
-      fi
+    # Refactored: Call shared script instead of inline logic
+    - bash ./src/step-test.sh
+  env:
+    INPUT_PROJECT_PATH: $PROJECT_PATH
+    INPUT_TESTS_PATH: $TESTS_PATH
+    INPUT_LOG_FILE: $LOG_FILE
   rules:
     - if: '$SKIP_TEST == "true"'
       when: never
@@ -161,18 +153,13 @@ test:
 versioning:
   stage: versioning
   image: gcc:latest
-  before_script:
-    - apt-get update && apt-get install -y python3 python3-pip
-    - pip install pipery-tooling
   script:
-    - echo "Running versioning step..."
-    - pipery-tooling version --project-path $PROJECT_PATH --version-bump $VERSION_BUMP --log-file $LOG_FILE
-    - |
-      if [ -f "$PROJECT_PATH/version.txt" ]; then
-        cat $PROJECT_PATH/version.txt > version_info.txt
-      else
-        echo "v1.0.0" > version_info.txt
-      fi
+    # Refactored: Call shared script instead of inline logic
+    - bash ./src/step-version.sh
+  env:
+    INPUT_PROJECT_PATH: $PROJECT_PATH
+    INPUT_VERSION_BUMP: $VERSION_BUMP
+    INPUT_LOG_FILE: $LOG_FILE
   artifacts:
     paths:
       - version_info.txt
@@ -189,10 +176,11 @@ packaging:
   dependencies:
     - build
   script:
-    - cd $PROJECT_PATH/build
-    - echo "Packaging C/C++ artifacts..."
-    - tar -czf artifacts.tar.gz .
-    - ls -la artifacts.tar.gz
+    # Refactored: Call shared script instead of inline logic
+    - bash ./src/step-package.sh
+  env:
+    INPUT_PROJECT_PATH: $PROJECT_PATH
+    INPUT_LOG_FILE: $LOG_FILE
   rules:
     - if: '$SKIP_PACKAGING == "true"'
       when: never
@@ -206,7 +194,11 @@ release:
   stage: release
   image: alpine:latest
   script:
-    - echo "Release artifacts available as build artifacts"
+    # Refactored: Call shared script instead of inline logic
+    - bash ./src/step-release.sh
+  env:
+    INPUT_PROJECT_PATH: $PROJECT_PATH
+    INPUT_LOG_FILE: $LOG_FILE
   rules:
     - if: '$SKIP_RELEASE == "true"'
       when: never
@@ -218,9 +210,13 @@ reintegration:
   stage: reintegration
   image: alpine:latest
   script:
-    - |
-      [ -z "$GITHUB_TOKEN" ] && exit 0
-      echo "Reintegration would update target branch"
+    # Refactored: Call shared script instead of inline logic
+    - bash ./src/step-reintegrate.sh
+  env:
+    INPUT_PROJECT_PATH: $PROJECT_PATH
+    INPUT_LOG_FILE: $LOG_FILE
+    INPUT_TARGET_BRANCH: $TARGET_BRANCH
+    GITHUB_TOKEN: $GITHUB_TOKEN
   rules:
     - if: '$SKIP_REINTEGRATION == "true"'
       when: never
